@@ -1,65 +1,113 @@
 package com.shalya.diploma.knapsack;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.security.core.parameters.P;
 
 import java.util.*;
 
 import static java.lang.Math.*;
 
 @Data
+@Slf4j
 public class KnapsackSolver {
     List<List<Packable>> items;
+    int[][] matrix;
     int maxWeight;
-    long bestLast;
-    long bestCur;
-    String res = "";
+
+    public KnapsackSolver(List<List<Packable>> items, int maxWeight) {
+        this.items = items;
+        this.matrix = new int[items.size()][maxWeight+1];
+        this.maxWeight = maxWeight;
+    }
 
     public String solve(){
-        ArrayList<Pair> last = new ArrayList<Pair>();
+        int[] last = new int[maxWeight+1];
         for (int i = 0; i < maxWeight+1; i++) {
-            last.add(new Pair(-1));
+            last[i] = -1;
         }
         for (int i = 0; i < items.get(0).size(); ++i) { //Идем по массиву 1 категории
             if (items.get(0).get(i).getWeight() < maxWeight){
-                if (last.get(items.get(0).get(i).getWeight()).getValue() < items.get(0).get(i).getValue())
-                    last.get(items.get(0).get(i).getWeight()).addNewPackable(items.get(0).get(i));
-                last.get(items.get(0).get(i).getWeight()).value = max(last.get(items.get(0).get(i).getWeight()).getValue(), items.get(0).get(i).getValue());
-
+                last[items.get(0).get(i).getWeight()] = max(last[items.get(0).get(i).getWeight()], items.get(0).get(i).getValue());
             }
         }
+        matrix[0] = ArrayUtils.clone(last);
 
-        res = res.concat("+"+bestLast);
-
-        ArrayList<Pair> current = new ArrayList<Pair>();
+        int[] current = new int[maxWeight+1];
 
         for (int i = 1; i < items.size(); ++i) { // Проходочка по всему
             for (int j = 0; j < maxWeight+1; j++) {
-                current.add(new Pair(-1));
+                current[i] = -1;
             }// Заполнить массиыы с начала до конца -1
             for (int j = 0; j < items.get(i).size(); ++j) {
                 for (int k = items.get(i).get(j).getWeight(); k <= maxWeight; ++k) {
-                    if (last.get(k - items.get(i).get(j).getWeight()).getValue() > 0){
-                        if (current.get(k).value < last.get(k - items.get(i).get(j).getWeight()).value + items.get(i).get(j).getValue()){
-                            current.get(k).addNewPackable(items.get(i).get(j));
-                            current.get(k).concatIds(last.get(k-items.get(i).get(j).getWeight()));
-                        }
-                        current.get(k).value = max(current.get(k).value,
-                                last.get(k - items.get(i).get(j).getWeight()).value + items.get(i).get(j).getValue());
+                    if (last[k - items.get(i).get(j).getWeight()] > 0){
+                        current[k] = max(current[k],
+                                last[k - items.get(i).get(j).getWeight()] + items.get(i).get(j).getValue());
                     }
                 }
             }
-            res = res.concat("+"+bestCur);
-            PairArrayUtils.copyPairList(current,last);
-            //swap(current, last);
-            current.clear();
+            matrix[i] = ArrayUtils.clone(current);
+            last = ArrayUtils.clone(current);
         }
-        last.sort(Comparator.comparingInt(Pair::getValue));
-        int deb = 0;
-        return last.get(last.size()-1).getIds();
+        Arrays.sort(current);
+        return current[current.length-1]+"!";
     }
-    private void swap(List<Pair> list1, List<Pair> list2){
-        List<Pair> tmpList = list1;
-        list1 = list2;
-        list2 = tmpList;
+
+    public List<Packable> restoreItems(){
+        ArrayList<Packable> result = new ArrayList<>();
+        int startValueIndex = PairArrayUtils.getIndexOfLargest(matrix[matrix.length-1]);
+        int startValue = matrix[matrix.length-1][startValueIndex];
+        if (startValue == -1)
+            return null;
+        for (int i = matrix.length-2; i >= 0; i--) {
+            for (int j = 0; j < items.get(i+1).size(); j++) {
+                if (startValueIndex - items.get(i+1).get(j).getWeight()<0)
+                    continue;
+                if ((startValue-items.get(i+1).get(j).getValue()) == matrix[i][startValueIndex - items.get(i+1).get(j).getWeight()]){
+                    startValueIndex = startValueIndex - items.get(i+1).get(j).getWeight();
+                    startValue = matrix[i][startValueIndex];
+                    result.add(items.get(i+1).get(j));
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i <items.get(0).size(); i++) {
+            if(items.get(0).get(i).getWeight() == startValueIndex && items.get(0).get(i).getValue()==startValue){
+                result.add(items.get(0).get(i));
+                break;
+            }
+
+        }
+        return result;
     }
+    public List<Packable> restoreItems2(){
+        ArrayList<Packable> result = new ArrayList<>();
+        int startValueIndex = PairArrayUtils.getIndexOf2Largest(matrix[matrix.length-1]);
+        int startValue = matrix[matrix.length-1][startValueIndex];
+        if (startValue == -1)
+            return null;
+        for (int i = matrix.length-2; i >= 0; i--) {
+            for (int j = 0; j < items.get(i+1).size(); j++) {
+                if (startValueIndex - items.get(i+1).get(j).getWeight()<0)
+                    continue;
+                if ((startValue-items.get(i+1).get(j).getValue()) == matrix[i][startValueIndex - items.get(i+1).get(j).getWeight()]){
+                    startValueIndex = startValueIndex - items.get(i+1).get(j).getWeight();
+                    startValue = matrix[i][startValueIndex];
+                    result.add(items.get(i+1).get(j));
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i <items.get(0).size(); i++) {
+            if(items.get(0).get(i).getWeight() == startValueIndex && items.get(0).get(i).getValue()==startValue){
+                result.add(items.get(0).get(i));
+                break;
+            }
+
+        }
+        return result;
+    }
+
 }
