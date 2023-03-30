@@ -82,9 +82,9 @@ public class KnapsackSolver {
         }
         return result;
     }
-    public List<Packable> restoreItems2(){
+    public List<Packable> restoreItemsTop(int top){
         ArrayList<Packable> result = new ArrayList<>();
-        int startValueIndex = PairArrayUtils.getIndexOf2Largest(matrix[matrix.length-1]);
+        int startValueIndex = PairArrayUtils.indexesOfTopElements(matrix[matrix.length-1], top)[0];
         int startValue = matrix[matrix.length-1][startValueIndex];
         if (startValue == -1)
             return null;

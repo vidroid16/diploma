@@ -1,5 +1,6 @@
 package com.shalya.diploma.models;
 
+import com.shalya.diploma.knapsack.Packable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @NoArgsConstructor
-public class Good {
+public class Good implements Packable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
@@ -36,4 +37,14 @@ public class Good {
 
     @Column(name = "rating")
     private Integer rating;
+
+    @Override
+    public int getWeight() {
+        return (int) Math.round(this.price);
+    }
+
+    @Override
+    public int getValue() {
+        return this.rating;
+    }
 }

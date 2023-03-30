@@ -90,14 +90,14 @@ public class AuthController {
     public String test2(){
         List<Packable> cat1 = new ArrayList<>();
         cat1.add(new Item(1L,1,1));
-        cat1.add(new Item(2L,1,1));
+        cat1.add(new Item(2L,4,4));
 //        cat1.add(new Item(2L,3,2));
 //        cat1.add(new Item(3L,3,2));
 //        cat1.add(new Item(4L,3,2));
 
         List<Packable> cat2 = new ArrayList<>();
         cat2.add(new Item(5L,2,1));
-        cat2.add(new Item(6L,2,1));
+        cat2.add(new Item(6L,2,4));
         cat2.add(new Item(7L,11,49));
 //        cat2.add(new Item(8L,3,5));
 //        cat2.add(new Item(9L,3,2));
@@ -114,7 +114,7 @@ public class AuthController {
         cat4.add(new Item(16L,28,1));
         cat4.add(new Item(17L,38,4));
         cat4.add(new Item(18L,38,5));
-        cat4.add(new Item(19L,1,2));
+        cat4.add(new Item(19L,1,3));
 
         ArrayList<List<Packable>> items = new ArrayList<>();
 
@@ -127,7 +127,14 @@ public class AuthController {
         solver.setItems(items);
         solver.setMaxWeight(12);
         solver.solve();
-        solver.restoreItems2();
+        List<Packable> res = solver.restoreItems();
+        int counter = 2;
+        while (res.size()!=items.size()){
+            res = solver.restoreItemsTop(counter);
+            if (counter>6)
+                break;
+            counter++;
+        }
         return "!";
     }
 }
