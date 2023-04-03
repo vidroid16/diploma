@@ -63,9 +63,9 @@ public class HelloController {
         list.setUser(user);
         user.getLists();
         Rating rating = new Rating();
-        rating.setUser(user);
-        rating.setGood(goodRepository.getById(1L).orElse(null));
-        rating.setRating(6.54);
+//        rating.setUser(user);
+//        rating.setGood(goodRepository.getById(1L).orElse(null));
+//        rating.setRating(6.54);
         //ratingRepository.save(rating);
         java.util.List<Rating> us = ratingRepository.getAllByUser(user);
         return "OK";

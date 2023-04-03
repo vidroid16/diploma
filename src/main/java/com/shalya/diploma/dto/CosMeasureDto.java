@@ -1,0 +1,13 @@
+package com.shalya.diploma.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class CosMeasureDto {
+    Long userId;
+    Double measure;
+}

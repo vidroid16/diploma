@@ -1,14 +1,18 @@
 package com.shalya.diploma.api;
 
+import com.shalya.diploma.dto.CosMeasureDto;
+import com.shalya.diploma.dto.RatingDto;
 import com.shalya.diploma.knapsack.Item;
 import com.shalya.diploma.knapsack.KnapsackSolver;
 import com.shalya.diploma.knapsack.Packable;
+import com.shalya.diploma.mappers.RatingMapper;
 import com.shalya.diploma.models.Good;
-import com.shalya.diploma.repositories.CategoryRepository;
-import com.shalya.diploma.repositories.GoodRepository;
-import com.shalya.diploma.repositories.HelloEntityRepository;
-import com.shalya.diploma.repositories.UserRepository;
+import com.shalya.diploma.models.Rating;
+import com.shalya.diploma.models.RatingId;
+import com.shalya.diploma.models.User;
+import com.shalya.diploma.repositories.*;
 import com.shalya.diploma.security.JwtUtils;
+import com.shalya.diploma.services.RatingService;
 import com.shalya.diploma.services.UpdateGoodsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,7 +37,11 @@ public class TestController {
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
     private final GoodRepository goodRepository;
+
+    private final RatingService ratingService;
     private final CategoryRepository categoryRepository;
+
+    private final RatingRepository ratingRepository;
     private final UpdateGoodsService updateGoodsService;
 
     @PostMapping("/t/{cat}/{name}")
@@ -108,5 +118,44 @@ public class TestController {
         solver.solve();
         List<Packable> res = solver.restoreItems();
         return res;
+    }
+
+    @PostMapping("/t4")
+    public List<RatingDto> test4(){
+        User u1 = userRepository.findByLogin("baiden228").orElse(null);
+        List<Good> g1 = goodRepository.findAll();
+
+        RatingId ratingId = new RatingId();
+
+        List<Rating> ratings = ratingRepository.getAllByUser(u1);
+        List<RatingDto> dtos = new ArrayList<>();
+        ratings.forEach(p->dtos.add(RatingMapper.ratingToRatingDto(p)));
+
+        Rating r1 = new Rating();
+        Random random = new Random();
+        r1.setUser(u1);
+        r1.setId(ratingId);
+        r1.setRating(3.4);
+        for (int i = 0; i < 100; i++) {
+            int idGood = random.nextInt(850-750)+750;
+            ratingId.setUserId(u1.getId());
+            ratingId.setGoodId((long) idGood);
+            r1.setRating(Math.random()*5);
+            r1.setGood(goodRepository.getById((long) idGood).orElse(null));
+            r1.setId(ratingId);
+            ratingRepository.save(r1);
+            log.info("Good = {}, Rate = {}",idGood,r1.getRating());
+        }
+        return dtos;
+    }
+    @PostMapping("/t6")
+    public List<CosMeasureDto> test6(){
+        ratingService.updateUser(1L);
+        return null;
+    }
+    @PostMapping("/t7")
+    public String test7(){
+        ratingService.randomRatings(40,2L,800L,900L);
+        return "?";
     }
 }

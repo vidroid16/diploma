@@ -36,12 +36,12 @@ public class UpdateGoodsService {
 
     @PostConstruct
     private void postConstruct(){
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--remote-allow-origins=*");
-        WebDriver driver = new ChromeDriver(options);
-        this.driver = driver;
-        driver.manage().window().minimize();
-        driver.get("https://www.perekrestok.ru/");
+//        ChromeOptions options = new ChromeOptions();
+//        options.addArguments("--remote-allow-origins=*");
+//        WebDriver driver = new ChromeDriver(options);
+//        this.driver = driver;
+//        driver.manage().window().minimize();
+//        driver.get("https://www.perekrestok.ru/");
     }
 
     private Double convertIntPrice(int price){

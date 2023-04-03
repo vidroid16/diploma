@@ -11,18 +11,30 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Rating {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "goodId")
-    private Good good;
+    public Rating(User user, Good good, Double rating, Boolean isUserOwned) {
+        this.user = user;
+        this.good = good;
+        this.rating = rating;
+        this.isUserOwned = isUserOwned;
+    }
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @EmbeddedId
+    RatingId id = new RatingId();
+    @ManyToOne
+    @MapsId("userId")
     @JoinColumn(name = "userId")
-    private User user;
+    User user;
+
+    @ManyToOne
+    @MapsId("goodId")
+    @JoinColumn(name = "goodId")
+    Good good;
 
     @Column(name = "rating")
-    private Double rating;
+    Double rating;
+
+    @Column(name = "uOwned")
+    Boolean isUserOwned;
+
 }

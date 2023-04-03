@@ -1,11 +1,17 @@
 package com.shalya.diploma.models;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import com.shalya.diploma.security.models.Role;
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @JsonIgnoreProperties("password")
@@ -33,7 +39,7 @@ public class User {
     @Column(name = "role")
     private Role role;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private java.util.List<ShopList> lists;
 
     public User() {
