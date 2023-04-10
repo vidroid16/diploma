@@ -2,6 +2,7 @@ package com.shalya.diploma.api;
 
 import com.shalya.diploma.dto.GetUserShopListDto;
 import com.shalya.diploma.dto.GetUserShopListsDto;
+import com.shalya.diploma.dto.requests.CreateKnapsackRequest;
 import com.shalya.diploma.dto.requests.CreateListRequest;
 import com.shalya.diploma.exceptions.NoPermissionException;
 import com.shalya.diploma.exceptions.ObjectNotFoundException;
@@ -65,12 +66,24 @@ public class ShopListController {
     @DeleteMapping("/{list-id}/{good-id}")
     public ResponseEntity<Object> deleteGoodToShopList(@PathVariable("list-id") Long listId, @PathVariable("good-id") Long goodId){
         try {
-            shopListService.addGoodInShopList(listId,goodId);
+            shopListService.deleteGoodInShopList(listId,goodId);
             return ResponseEntity.ok().build();
         } catch (NoPermissionException e) {
             return ResponseEntity.status(403).body(e.getMessage());
         } catch (ObjectNotFoundException e) {
             return ResponseEntity.status(404).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/knapsack")
+    public ResponseEntity<Object> createKnapsack(@RequestBody CreateKnapsackRequest request){
+        try {
+            var result =  shopListService.createKnapsack(request);
+            return ResponseEntity.ok(result);
+        } catch (ObjectNotFoundException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        } catch (NoPermissionException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
         }
     }
 

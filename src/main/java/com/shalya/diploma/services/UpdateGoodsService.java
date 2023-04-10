@@ -36,12 +36,12 @@ public class UpdateGoodsService {
 
     @PostConstruct
     private void postConstruct(){
-//        ChromeOptions options = new ChromeOptions();
-//        options.addArguments("--remote-allow-origins=*");
-//        WebDriver driver = new ChromeDriver(options);
-//        this.driver = driver;
-//        driver.manage().window().minimize();
-//        driver.get("https://www.perekrestok.ru/");
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--remote-allow-origins=*");
+        WebDriver driver = new ChromeDriver(options);
+        this.driver = driver;
+        driver.manage().window().minimize();
+        driver.get("https://www.perekrestok.ru/");
     }
 
     private Double convertIntPrice(int price){
@@ -140,8 +140,14 @@ public class UpdateGoodsService {
                         }
                         good.setRating(product.getInt("rating"));
                         good.setPrice(convertIntPrice(product.getInt("medianPrice")));
+                        good.setIsActive(true);
 
-                        goodRepository.save(good);
+                        Good existingGood = goodRepository.getByNameAndCategory(good.getName(),category).orElse(null);
+                        if (existingGood != null){
+                            goodRepository.updateGood(existingGood.getId(),good.getPrice(),good.getRating());
+                        }else {
+                            goodRepository.save(good);
+                        }
                         goods.add(good);
                         log.info(good.getName());
                     }catch (Exception e){
@@ -151,7 +157,6 @@ public class UpdateGoodsService {
                 }
             }
             log.info(String.valueOf(goods.size()));
-            goods.forEach(goodRepository::save);
         } catch (Exception e) {
             e.printStackTrace();
         }

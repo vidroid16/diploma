@@ -3,27 +3,28 @@ package com.shalya.diploma.services;
 import com.shalya.diploma.dto.GetUserShopListDto;
 import com.shalya.diploma.dto.GetUserShopListsDto;
 import com.shalya.diploma.dto.GoodInShopListDto;
+import com.shalya.diploma.dto.requests.CreateKnapsackRequest;
 import com.shalya.diploma.dto.requests.CreateListRequest;
 import com.shalya.diploma.dto.requests.UpdateShopListRequest;
 import com.shalya.diploma.exceptions.NoPermissionException;
 import com.shalya.diploma.exceptions.ObjectNotFoundException;
+import com.shalya.diploma.knapsack.KnapsackGood;
+import com.shalya.diploma.knapsack.KnapsackSolver;
+import com.shalya.diploma.knapsack.Packable;
 import com.shalya.diploma.mappers.GoodMapper;
 import com.shalya.diploma.mappers.ListMapper;
-import com.shalya.diploma.models.Good;
-import com.shalya.diploma.models.ListsGoods;
-import com.shalya.diploma.models.ShopList;
-import com.shalya.diploma.models.User;
-import com.shalya.diploma.repositories.GoodRepository;
-import com.shalya.diploma.repositories.ListRepository;
-import com.shalya.diploma.repositories.ListsGoodsRepository;
-import com.shalya.diploma.repositories.UserRepository;
+import com.shalya.diploma.models.*;
+import com.shalya.diploma.repositories.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,8 @@ public class ShopListService {
     private final ListRepository listRepository;
     private final ListsGoodsRepository listsGoodsRepository;
     private final GoodRepository goodRepository;
+
+    private final CategoryRepository categoryRepository;
 
     public List<GetUserShopListsDto> getUserShopLists(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -92,7 +95,7 @@ public class ShopListService {
             throw new NoPermissionException(user.getLogin());
 
         Good good = goodRepository.getById(goodId).orElse(null);
-        if(good != null)
+        if(good == null)
             throw new ObjectNotFoundException("Такого товара не существует");
 
         ListsGoods listsGoods = new ListsGoods();
@@ -112,10 +115,11 @@ public class ShopListService {
             throw new NoPermissionException(user.getLogin());
 
         Good good = goodRepository.getById(goodId).orElse(null);
-        if(good != null)
+        if(good == null)
             throw new ObjectNotFoundException("Такого товара не существует");
 
-        listsGoodsRepository.deleteByGoodIdAndShopListId(goodId,listId);
+        var goods = listsGoodsRepository.getByGoodAndShopList(good,shopList);
+        listsGoodsRepository.deleteById(goods.get(0).getId());
     }
     public void setGoodAsChecked(Long listId, Long goodId) throws NoPermissionException, ObjectNotFoundException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -131,10 +135,14 @@ public class ShopListService {
         if(good != null)
             throw new ObjectNotFoundException("Такого товара не существует");
 
-        ListsGoods listsGoods = listsGoodsRepository.getByGoodIdAndShopListId(goodId,listId).orElse(null);
+        var listsGoods = listsGoodsRepository.getByGoodIdAndShopListId(goodId,listId);
         if(listsGoods!=null){
-            listsGoods.setIsChecked(true);
-            listsGoodsRepository.save(listsGoods);
+            var uncheckedGoods = listsGoods.stream().filter(p-> !p.getIsChecked()).toList();
+            if (uncheckedGoods.size()>0) {
+                var goodToUpdate = uncheckedGoods.get(0);
+                goodToUpdate.setIsChecked(true);
+                listsGoodsRepository.save(goodToUpdate);
+            }
         }
 
     }
@@ -151,4 +159,51 @@ public class ShopListService {
         ShopList updatedShopList = ListMapper.updateShopListRequestToShopList(dto);
         listRepository.save(updatedShopList);
     }
+    public GetUserShopListDto createKnapsack(CreateKnapsackRequest request) throws ObjectNotFoundException, NoPermissionException {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByLogin(authentication.getName()).orElse(null);
+
+        List<List<Packable>> itemsInKnapsack = new ArrayList<>();
+        request.getCategories().forEach(p->{
+            Category category = categoryRepository.getById(p);
+            if (category!=null){
+                List<Good> goods = new ArrayList<>(goodRepository.findAllByCategory(category));
+                List<Packable> gs = new ArrayList<>();
+                goods.forEach(g->{
+                    gs.add(new KnapsackGood(g));
+                });
+                itemsInKnapsack.add(gs);
+            }
+        });
+
+        KnapsackSolver solver = new KnapsackSolver(itemsInKnapsack, request.getBudget());
+        solver.solve();
+        var knapsack = solver.restoreItems();
+        for (int i = 2; i <= 5; i++) {
+            if (knapsack.size()<request.getCategories().size())
+                knapsack = solver.restoreItemsTop(i);
+            else
+                break;
+        }
+
+        List<Good> goods = new ArrayList<>();
+        knapsack.forEach(p->Collections.fill(goods,goodRepository.getById(p.getId()).orElse(null)));
+
+        ShopList shopList = new ShopList();
+        shopList.setBudget(request.getBudget());
+        shopList.setName(request.getName());
+        shopList.setTotalPrice(goods.stream().mapToDouble(Good::getPrice).sum());
+        shopList.setUser(user);
+        ShopList createdShopList = shopList = listRepository.save(shopList);
+        knapsack.forEach(p-> {
+            try {
+                addGoodInShopList(createdShopList.getId(),p.getId());
+            } catch (NoPermissionException | ObjectNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return getUserShopList(createdShopList.getId());
+    }
+
 }

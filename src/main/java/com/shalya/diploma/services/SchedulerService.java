@@ -18,7 +18,8 @@ public class SchedulerService {
         log.info("Updating users ratings");
         ratingService.updateAllUsers();
     }
+    @Scheduled(cron = "0 0 5 * * ?")
     public void updateGoods(){
-        log.info("now is 5:00");
+        updateGoodsService.updateAllGoods();
     }
 }

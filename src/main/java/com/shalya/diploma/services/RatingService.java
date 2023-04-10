@@ -2,8 +2,10 @@ package com.shalya.diploma.services;
 
 import com.beust.ah.A;
 import com.shalya.diploma.dto.CosMeasureDto;
+import com.shalya.diploma.dto.GoodDto;
 import com.shalya.diploma.dto.RatingDto;
 import com.shalya.diploma.dto.UserVector;
+import com.shalya.diploma.models.Good;
 import com.shalya.diploma.models.Rating;
 import com.shalya.diploma.models.RatingId;
 import com.shalya.diploma.models.User;
@@ -11,6 +13,8 @@ import com.shalya.diploma.repositories.GoodRepository;
 import com.shalya.diploma.repositories.RatingRepository;
 import com.shalya.diploma.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,9 +28,28 @@ public class RatingService {
     private final UserRepository userRepository;
     private final GoodRepository goodRepository;
     private final RatingRepository ratingRepository;
-
     private static final int  FIRST_N= 3;
 
+
+    public void rateGood(Long goodId, Double mark){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByLogin(authentication.getName()).orElse(null);
+        Good good = goodRepository.getById(goodId).orElse(null);
+        if (user!=null && good!=null){
+            if (good.getUser()==null || good.getUser().equals(user)){
+                Rating rating = new Rating();
+                rating.setGood(good);
+                rating.setUser(user);
+                rating.setIsUserOwned(true);
+                rating.setRating(mark);
+                if (ratingRepository.getById(new RatingId(user.getId(), good.getId())).isPresent()){
+                    ratingRepository.updateMark(user.getId(), good.getId(), rating.getRating(), rating.getIsUserOwned());
+                }else {
+                    ratingRepository.save(rating);
+                }
+            }
+        }
+    }
     public void updateAllUsers(){
         var users = userRepository.findAll();
         for (User user : users) {

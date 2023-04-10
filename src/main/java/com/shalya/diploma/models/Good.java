@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Entity
 @Table(name = "goods")
 @AllArgsConstructor
@@ -34,9 +36,18 @@ public class Good implements Packable {
 
     @Column(name = "unit")
     private String unit;
-
     @Column(name = "rating")
     private Integer rating;
+
+    @Column(name = "is_active")
+    private Boolean isActive;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @OneToMany(mappedBy = "good", cascade = CascadeType.REMOVE)
+    private Set<Rating> ratings;
 
     @Override
     public int getWeight() {

@@ -158,4 +158,9 @@ public class TestController {
         ratingService.randomRatings(40,2L,800L,900L);
         return "?";
     }
+    @PostMapping("/t8")
+    public String test8(){
+        updateGoodsService.getAllCategoryGoods(303L);
+        return "?";
+    }
 }
